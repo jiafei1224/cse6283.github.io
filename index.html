@@ -84,19 +84,18 @@
     clear: none;
   }
 
-  table.workload, table.grading {
+  table.workload {
     border-collapse: collapse;
     width: 100%;
     margin: 8px 0 16px;
     font-size: 15.5px;
   }
-  table.workload th, table.workload td,
-  table.grading th, table.grading td {
+  table.workload th, table.workload td {
     text-align: left;
     padding: 7px 12px;
     border-bottom: 1px solid #ddd;
   }
-  table.workload th, table.grading th {
+  table.workload th {
     color: var(--muted);
     font-weight: 700;
     font-size: 13px;
@@ -104,66 +103,14 @@
     letter-spacing: 0.03em;
     font-family: "Roboto Mono", monospace;
   }
-  table.workload tr.total td, table.grading tr.total td {
+  table.workload tr.total td {
     font-weight: 700;
     border-top: 2px solid #000;
     border-bottom: none;
   }
 
-  .footer {
-    margin-top: 40px;
-    padding-top: 20px;
-    border-top: 1px solid var(--rule);
-    color: var(--muted);
-    font-size: 13px;
-    font-family: "Roboto Mono", monospace;
-    text-transform: uppercase;
-    letter-spacing: 0.02em;
-  }
-
-  /* Tabs */
-  .tabs {
-    clear: both;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px 8px;
-    border-top: 1px solid var(--rule);
-    border-bottom: 1px solid var(--rule);
-    margin-top: 2.5em;
-    padding: 0;
-  }
-  .tab-btn {
-    appearance: none;
-    background: none;
-    border: none;
-    border-bottom: 3px solid transparent;
-    cursor: pointer;
-    font-family: "Roboto Mono", monospace;
-    font-size: 14px;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    color: var(--muted);
-    padding: 12px 4px 9px;
-    margin: 0 12px 0 0;
-  }
-  .tab-btn:hover { color: var(--accent); }
-  .tab-btn.active {
-    color: #000;
-    border-bottom-color: var(--accent);
-  }
-  .tab-panel { padding-top: 2em; padding-bottom: 0.5em; }
-  .tab-panel[hidden] { display: none; }
-  .tab-panel h2 { margin-top: 0; }
-  .tab-note {
-    color: var(--muted);
-    font-size: 13.5px;
-    margin: -8px 0 16px;
-  }
-
   @media screen and (max-width: 600px) {
     .nav-box { float: none; width: 100%; margin: 20px 0; }
-    .tabs { gap: 2px 14px; }
   }
 </style>
 </head>
@@ -219,120 +166,6 @@
     </table>
   </div>
 
-  <nav class="tabs" role="tablist">
-    <button class="tab-btn active" data-tab="schedule" role="tab" aria-selected="true">Schedule</button>
-    <button class="tab-btn" data-tab="project" role="tab" aria-selected="false">Project</button>
-    <button class="tab-btn" data-tab="commentaries" role="tab" aria-selected="false">Commentaries</button>
-    <button class="tab-btn" data-tab="assignments" role="tab" aria-selected="false">Assignments</button>
-    <button class="tab-btn" data-tab="grading" role="tab" aria-selected="false">Grading</button>
-  </nav>
-
-  <div class="tab-panel" id="tab-schedule" role="tabpanel">
-    <h2>Schedule</h2>
-    <p class="tab-note">Tentative &mdash; dates to be announced, subject to change.</p>
-    <table class="workload">
-      <tr><th>Week</th><th>Topic</th></tr>
-      <tr><td>1</td><td>Course overview &amp; introduction to embodied AI</td></tr>
-      <tr><td>2</td><td>Robotic manipulation foundations I &mdash; rigid-body kinematics &amp; contact mechanics</td></tr>
-      <tr><td>3</td><td>Robotic manipulation foundations II &mdash; grasping &amp; motion planning</td></tr>
-      <tr><td>4</td><td>Imitation learning I &mdash; behavior cloning &amp; DAgger</td></tr>
-      <tr><td>5</td><td>Imitation learning II &mdash; Action Chunking Transformers (ACT) &amp; Diffusion Policy</td></tr>
-      <tr><td>6</td><td>Reinforcement learning I &mdash; MDPs &amp; value-based methods</td></tr>
-      <tr><td>7</td><td>Reinforcement learning II &mdash; policy-gradient methods, PPO &amp; SAC</td></tr>
-      <tr><td>8</td><td>Reinforcement learning III &mdash; offline RL &amp; sim-to-real transfer</td></tr>
-      <tr><td>9</td><td>Vision-Language-Action models I &mdash; RT-1, RT-2, OpenVLA</td></tr>
-      <tr><td>10</td><td>Vision-Language-Action models II &mdash; MolmoAct, &pi;-0.5, cross-embodiment learning</td></tr>
-      <tr><td>11</td><td>Long-horizon reasoning &mdash; SayCan, Manipulate-Anything, Code-as-Policies</td></tr>
-      <tr><td>12</td><td>Foundation models for robotics &mdash; world models &amp; generative simulators</td></tr>
-      <tr><td>13</td><td>Capstone project presentations</td></tr>
-    </table>
-  </div>
-
-  <div class="tab-panel" id="tab-project" hidden role="tabpanel">
-    <h2>Project</h2>
-    <p>
-      Students complete a quarter-long capstone project in teams of two to three, applying course concepts to an
-      open problem in robot learning &mdash; e.g. imitation or reinforcement learning for manipulation, adapting
-      a Vision-Language-Action model to a new task or embodiment, or evaluating a foundation model's capability
-      as a robot policy or world model. Projects may be validated in simulation or on physical hardware where
-      available.
-    </p>
-    <table class="workload">
-      <tr><th>Milestone</th><th>Deliverable</th></tr>
-      <tr><td>Proposal</td><td>1-page problem statement, related work, and planned approach</td></tr>
-      <tr><td>Check-in</td><td>Progress update &amp; preliminary results</td></tr>
-      <tr><td>Final</td><td>Presentation and written report</td></tr>
-    </table>
-  </div>
-
-  <div class="tab-panel" id="tab-commentaries" hidden role="tabpanel">
-    <h2>Commentaries</h2>
-    <p>
-      Each week's readings are paired with a short written commentary due before class, covering: a summary of
-      the paper's core claim and method, a critique of its assumptions or limitations, and how it connects to
-      the broader arc of the course. Commentaries feed directly into in-class paper discussions and debates.
-    </p>
-    <p>
-      Commentaries should also engage with the ethical and societal implications of the work under discussion
-      &mdash; safety, accountability, bias in training data, privacy, labor displacement, and the responsible
-      collection and use of large-scale robot datasets are all fair game as embodied AI systems move from
-      controlled lab settings into homes, workplaces, and public spaces.
-    </p>
-  </div>
-
-  <div class="tab-panel" id="tab-assignments" hidden role="tabpanel">
-    <h2>Assignments</h2>
-    <p>
-      One hands-on coding assignment accompanies the course, implementing and evaluating a policy-learning
-      baseline (e.g. behavior cloning or a diffusion policy) on a manipulation benchmark. Submissions are graded
-      on correctness, code quality, and a brief write-up of results. Due date TBD.
-    </p>
-  </div>
-
-  <div class="tab-panel" id="tab-grading" hidden role="tabpanel">
-    <h2>Grading</h2>
-    <table class="grading">
-      <tr><th>Component</th><th>Weight</th></tr>
-      <tr><td>Class Participation</td><td>30%</td></tr>
-      <tr><td>Project / Group Project</td><td>60%</td></tr>
-      <tr><td>Coding Assignment</td><td>10%</td></tr>
-    </table>
-  </div>
-
-  <div class="footer">
-    CSE 6283 &middot; Robot Learning in the Era of Foundation Models
-  </div>
-
 </div>
-<script>
-  (function () {
-    var buttons = document.querySelectorAll('.tab-btn');
-    var panels = document.querySelectorAll('.tab-panel');
-
-    function activate(name) {
-      var found = false;
-      buttons.forEach(function (b) {
-        var isMatch = b.dataset.tab === name;
-        b.classList.toggle('active', isMatch);
-        b.setAttribute('aria-selected', isMatch);
-        if (isMatch) found = true;
-      });
-      if (!found) return;
-      panels.forEach(function (p) {
-        p.hidden = p.id !== 'tab-' + name;
-      });
-    }
-
-    buttons.forEach(function (b) {
-      b.addEventListener('click', function () {
-        activate(b.dataset.tab);
-        history.replaceState(null, '', '#' + b.dataset.tab);
-      });
-    });
-
-    var initial = window.location.hash.replace('#', '');
-    if (initial) activate(initial);
-  })();
-</script>
 </body>
 </html>
