@@ -18,16 +18,22 @@
   * { box-sizing: border-box; }
   body {
     margin: 0;
-    padding: 20px 0 0;
+    padding: 0;
     background: var(--bg);
     color: var(--text);
     font: 400 16px/1.6 "Assistant", "Helvetica Neue", Helvetica, Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
   }
+  .banner {
+    display: block;
+    width: 100%;
+    max-height: 340px;
+    object-fit: cover;
+  }
   .container {
     max-width: 960px;
     margin: 0 auto;
-    padding: 0 24px 80px;
+    padding: 20px 24px 80px;
   }
   a { color: var(--link); font-weight: 400; text-decoration: none; }
   a:hover { color: var(--accent); text-decoration: none; }
@@ -79,9 +85,6 @@
     padding-top: 2.5em;
     padding-bottom: 0.5em;
     clear: both;
-  }
-  .section:first-of-type {
-    clear: none;
   }
 
   table.workload, table.grading {
@@ -168,6 +171,7 @@
 </style>
 </head>
 <body>
+<img class="banner" src="banner.jpg" alt="CSE 6283: Robot Learning in the Era of Foundation Models">
 <div class="container">
 
   <h1>CSE 6283: Robot Learning in the Era of Foundation Models</h1>
@@ -181,8 +185,8 @@
     <div><span class="label">Location</span>: TBD</div>
   </div>
 
-  <div class="section" style="border-top: none; padding-top: 0;">
-    <h2>Course Description</h2>
+  <div class="section" style="border-top: none; padding-top: 0; clear: none;">
+    <h2>About the course</h2>
     <p>
       This advanced course explores modern machine-learning algorithms for autonomous robots as embodied
       intelligent agents, examining how embodied AI differs from internet AI in perceiving raw sensory data,
