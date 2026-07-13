@@ -386,6 +386,13 @@
       var CUBE_SIZE = 0.3;
       var TABLE_Y = CUBE_SIZE / 2 + GRIP_HANG;   // elbow-tip target when touching a cube
       var LIFT_Y = 0.9 + GRIP_HANG;               // elbow-tip target when transiting
+      var FINGER_THICK = 0.045;
+      // finger center-to-center spread: inner face sits just outside the cube's
+      // side face when closed, and clear of it when open, so fingers never clip through
+      var GRIP_CLOSED_SPREAD = CUBE_SIZE / 2 + 0.0075 + FINGER_THICK / 2;
+      // kept narrow enough that open fingers don't reach into a neighboring
+      // tray slot (cubes are 0.4 apart, so stay well under 0.2 from center)
+      var GRIP_OPEN_SPREAD = CUBE_SIZE / 2 + 0.04 + FINGER_THICK / 2;
       var TRAY_Z = 1.3;
       var PICK_XS = [-1.0, -0.6, -0.2];
       var PLACE_XS = [0.2, 0.6, 1.0];
@@ -507,6 +514,14 @@
       var gripperGroup = new THREE.Group();
       wristPivot.add(gripperGroup);
 
+      var wristRod = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.045, 0.055, 0.12, 12),
+        new THREE.MeshStandardMaterial({ color: 0x555a60, roughness: 0.5 })
+      );
+      wristRod.position.y = -0.06;
+      wristRod.castShadow = true;
+      gripperGroup.add(wristRod);
+
       var palm = new THREE.Mesh(
         new THREE.BoxGeometry(0.16, 0.06, 0.1),
         new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.4 })
@@ -515,7 +530,7 @@
       palm.castShadow = true;
       gripperGroup.add(palm);
 
-      var fingerGeom = new THREE.BoxGeometry(0.045, GRIP_HANG, 0.09);
+      var fingerGeom = new THREE.BoxGeometry(FINGER_THICK, GRIP_HANG, 0.09);
       var fingerMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.4 });
       var fingerL = new THREE.Mesh(fingerGeom, fingerMat);
       var fingerR = new THREE.Mesh(fingerGeom, fingerMat);
@@ -596,7 +611,7 @@
         shoulderPivot.rotation.x = state.shoulderAngle;
         elbowPivot.rotation.x = state.elbowAngle;
         wristPivot.rotation.x = -(state.shoulderAngle + state.elbowAngle);
-        var spread = 0.03 + state.gripT * 0.09;
+        var spread = GRIP_CLOSED_SPREAD + state.gripT * (GRIP_OPEN_SPREAD - GRIP_CLOSED_SPREAD);
         fingerL.position.x = -spread;
         fingerR.position.x = spread;
 
