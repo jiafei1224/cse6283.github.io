@@ -160,13 +160,33 @@
   }
 
   .demo-canvas-wrap {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 700 / 420;
     border: 1px solid #ddd;
-    background: #fafafa;
+    background: #eef1f5;
+    overflow: hidden;
   }
-  #pick-place-canvas {
+  .demo-canvas-wrap canvas {
     display: block;
     width: 100%;
-    height: auto;
+    height: 100%;
+  }
+  .demo-fallback {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 24px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .demo-caption {
+    color: var(--muted);
+    font-size: 13px;
+    margin: 10px 0 0;
   }
 
   @media screen and (max-width: 600px) {
@@ -297,10 +317,11 @@
 
   <div class="tab-panel" id="tab-demo" hidden role="tabpanel">
     <h2>Demo</h2>
-    <p class="tab-note">Live in-browser simulation of a Cartesian pick-and-place robot &mdash; no backend, just canvas and JS.</p>
-    <div class="demo-canvas-wrap">
-      <canvas id="pick-place-canvas" width="700" height="300" aria-label="Animated pick-and-place robot simulation"></canvas>
+    <p class="tab-note">Live 3D simulation of a robotic arm picking and placing cubes &mdash; drag to orbit, scroll to zoom.</p>
+    <div class="demo-canvas-wrap" id="arm3d-wrap">
+      <div class="demo-fallback" id="arm3d-fallback">Loading 3D demo&hellip;</div>
     </div>
+    <p class="demo-caption">Blue-tinted zone: pick tray &middot; orange-tinted zone: place tray. The arm solves inverse kinematics live for every move.</p>
   </div>
 
   <div class="footer">
@@ -338,172 +359,286 @@
     if (initial) activate(initial);
   })();
 </script>
-<script>
-  (function () {
-    var canvas = document.getElementById('pick-place-canvas');
-    if (!canvas || !canvas.getContext) return;
-    var ctx = canvas.getContext('2d');
-    var W = canvas.width, H = canvas.height;
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+  import * as THREE from 'three';
+  import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-    var railY = 46;
-    var railX0 = 60, railX1 = 640;
-    var tableY = 228;
-    var retractedY = railY + 14;
-    var extendedY = tableY - 14;
-    var gripAttachOffset = (tableY - 10) - extendedY;
+  (async function () {
+    var wrap = document.getElementById('arm3d-wrap');
+    var fallback = document.getElementById('arm3d-fallback');
+    if (!wrap) return;
 
-    var pickXs = [140, 190, 240];
-    var placeXs = [420, 470, 520];
-    var colors = ['#ff8c00', '#4c86f4', '#2ecc71'];
+    try {
+      if (!window.WebGLRenderingContext) throw new Error('no-webgl');
 
-    var blocks = pickXs.map(function (x, i) {
-      return { x: x, y: tableY - 10, w: 26, h: 20, color: colors[i] };
-    });
+      // ---- geometry / kinematics constants ----
+      var L1 = 1.1, L2 = 1.1;         // upper arm & forearm length
+      var BASE_H = 0.5;               // shoulder pivot height
+      var GRIP_HANG = 0.25;           // fingers hang below wrist
+      var CUBE_SIZE = 0.3;
+      var TABLE_Y = CUBE_SIZE / 2 + GRIP_HANG;   // elbow-tip target when touching a cube
+      var LIFT_Y = 0.9 + GRIP_HANG;               // elbow-tip target when transiting
+      var TRAY_Z = 1.3;
+      var PICK_XS = [-1.0, -0.6, -0.2];
+      var PLACE_XS = [0.2, 0.6, 1.0];
+      var COLORS = [0xff8c00, 0x4c86f4, 0x2ecc71];
 
-    var carriage = { x: pickXs[0], rodY: retractedY, gripperOpen: 1, holdingIndex: -1 };
-
-    function buildSequence(forward) {
-      var xsFrom = forward ? pickXs : placeXs;
-      var xsTo = forward ? placeXs : pickXs;
-      var seq = [];
-      for (var i = 0; i < 3; i++) {
-        seq.push({ type: 'move', x: xsFrom[i] });
-        seq.push({ type: 'lower' });
-        seq.push({ type: 'grip', close: true, index: i });
-        seq.push({ type: 'raise' });
-        seq.push({ type: 'move', x: xsTo[i] });
-        seq.push({ type: 'lower' });
-        seq.push({ type: 'grip', close: false, index: i });
-        seq.push({ type: 'raise' });
+      function solveIK(x, y, z) {
+        var baseAngle = Math.atan2(x, z);
+        var r = Math.hypot(x, z);
+        var h = y - BASE_H;
+        var D = (h * h + r * r - L1 * L1 - L2 * L2) / (2 * L1 * L2);
+        D = Math.max(-1, Math.min(1, D));
+        var elbowAngle = Math.acos(D);
+        var shoulderAngle = Math.atan2(r, h) - Math.atan2(L2 * Math.sin(elbowAngle), L1 + L2 * Math.cos(elbowAngle));
+        return { baseAngle: baseAngle, shoulderAngle: shoulderAngle, elbowAngle: elbowAngle };
       }
-      seq.push({ type: 'pause', duration: 800 });
-      return seq;
-    }
+      function poseAbove(xs, i) { return solveIK(xs[i], LIFT_Y, TRAY_Z); }
+      function poseAt(xs, i) { return solveIK(xs[i], TABLE_Y, TRAY_Z); }
 
-    var direction = true;
-    var sequence = buildSequence(direction);
-    var stepIndex = 0;
-    var stepStart = null;
-    var stepFrom = null;
-    var durations = { move: 650, lower: 380, raise: 380, grip: 300, pause: 800 };
+      // ---- renderer / scene ----
+      var renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.shadowMap.enabled = true;
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      wrap.innerHTML = '';
+      wrap.appendChild(renderer.domElement);
 
-    function easeInOut(t) { return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; }
+      var scene = new THREE.Scene();
+      scene.background = new THREE.Color(0xeef1f5);
 
-    function beginStep(ts, step) {
-      stepStart = ts;
-      if (step.type === 'move') stepFrom = { x: carriage.x };
-      else if (step.type === 'lower' || step.type === 'raise') stepFrom = { rodY: carriage.rodY };
-      if (step.type === 'grip' && step.close) carriage.holdingIndex = step.index;
-    }
+      var camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
+      camera.position.set(2.8, 2.1, 3.4);
 
-    function update(ts) {
-      var step = sequence[stepIndex];
-      if (stepStart === null) beginStep(ts, step);
-      var dur = step.duration || durations[step.type] || 400;
-      var t = Math.min(1, (ts - stepStart) / dur);
-      var et = easeInOut(t);
+      var controls = new OrbitControls(camera, renderer.domElement);
+      controls.target.set(0, 0.5, 0.5);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.08;
+      controls.minDistance = 1.8;
+      controls.maxDistance = 7;
+      controls.maxPolarAngle = Math.PI / 2 - 0.03;
+      controls.update();
 
-      if (step.type === 'move') {
-        carriage.x = stepFrom.x + (step.x - stepFrom.x) * et;
-      } else if (step.type === 'lower') {
-        carriage.rodY = stepFrom.rodY + (extendedY - stepFrom.rodY) * et;
-      } else if (step.type === 'raise') {
-        carriage.rodY = stepFrom.rodY + (retractedY - stepFrom.rodY) * et;
-      } else if (step.type === 'grip') {
-        carriage.gripperOpen = step.close ? (1 - et) : et;
+      scene.add(new THREE.AmbientLight(0xffffff, 0.65));
+      var sun = new THREE.DirectionalLight(0xffffff, 0.9);
+      sun.position.set(3, 5, 2);
+      sun.castShadow = true;
+      sun.shadow.mapSize.set(1024, 1024);
+      sun.shadow.camera.left = -3;
+      sun.shadow.camera.right = 3;
+      sun.shadow.camera.top = 3;
+      sun.shadow.camera.bottom = -3;
+      sun.shadow.camera.near = 0.5;
+      sun.shadow.camera.far = 12;
+      scene.add(sun);
+
+      var ground = new THREE.Mesh(
+        new THREE.PlaneGeometry(7, 7),
+        new THREE.MeshStandardMaterial({ color: 0xe4e7ea, roughness: 0.95 })
+      );
+      ground.rotation.x = -Math.PI / 2;
+      ground.receiveShadow = true;
+      scene.add(ground);
+
+      var grid = new THREE.GridHelper(7, 14, 0xc9cdd2, 0xdadde1);
+      grid.position.y = 0.001;
+      scene.add(grid);
+
+      function addSlotMarker(x, z, tint) {
+        var ring = new THREE.Mesh(
+          new THREE.RingGeometry(0.17, 0.2, 32),
+          new THREE.MeshBasicMaterial({ color: tint, side: THREE.DoubleSide })
+        );
+        ring.rotation.x = -Math.PI / 2;
+        ring.position.set(x, 0.004, z);
+        scene.add(ring);
+      }
+      PICK_XS.forEach(function (x) { addSlotMarker(x, TRAY_Z, 0x9db6e8); });
+      PLACE_XS.forEach(function (x) { addSlotMarker(x, TRAY_Z, 0xffc98a); });
+
+      // ---- arm hierarchy ----
+      var baseGroup = new THREE.Group();
+      scene.add(baseGroup);
+
+      var base = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.32, 0.38, BASE_H, 24),
+        new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.6 })
+      );
+      base.position.y = BASE_H / 2;
+      base.castShadow = true;
+      base.receiveShadow = true;
+      baseGroup.add(base);
+
+      var shoulderPivot = new THREE.Group();
+      shoulderPivot.position.set(0, BASE_H, 0);
+      baseGroup.add(shoulderPivot);
+
+      var upperArm = new THREE.Mesh(
+        new THREE.BoxGeometry(0.18, L1, 0.18),
+        new THREE.MeshStandardMaterial({ color: 0xff8c00, roughness: 0.5 })
+      );
+      upperArm.position.y = L1 / 2;
+      upperArm.castShadow = true;
+      shoulderPivot.add(upperArm);
+
+      var elbowPivot = new THREE.Group();
+      elbowPivot.position.set(0, L1, 0);
+      shoulderPivot.add(elbowPivot);
+
+      var forearm = new THREE.Mesh(
+        new THREE.BoxGeometry(0.14, L2, 0.14),
+        new THREE.MeshStandardMaterial({ color: 0x555a60, roughness: 0.5 })
+      );
+      forearm.position.y = L2 / 2;
+      forearm.castShadow = true;
+      elbowPivot.add(forearm);
+
+      var wristPivot = new THREE.Group();
+      wristPivot.position.set(0, L2, 0);
+      elbowPivot.add(wristPivot);
+
+      var gripperGroup = new THREE.Group();
+      wristPivot.add(gripperGroup);
+
+      var palm = new THREE.Mesh(
+        new THREE.BoxGeometry(0.16, 0.06, 0.1),
+        new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.4 })
+      );
+      palm.position.y = -0.03;
+      palm.castShadow = true;
+      gripperGroup.add(palm);
+
+      var fingerGeom = new THREE.BoxGeometry(0.045, GRIP_HANG, 0.09);
+      var fingerMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.4 });
+      var fingerL = new THREE.Mesh(fingerGeom, fingerMat);
+      var fingerR = new THREE.Mesh(fingerGeom, fingerMat);
+      fingerL.position.y = -0.06 - GRIP_HANG / 2;
+      fingerR.position.y = -0.06 - GRIP_HANG / 2;
+      fingerL.castShadow = true;
+      fingerR.castShadow = true;
+      gripperGroup.add(fingerL, fingerR);
+
+      // ---- cubes ----
+      var cubes = PICK_XS.map(function (x, i) {
+        var cube = new THREE.Mesh(
+          new THREE.BoxGeometry(CUBE_SIZE, CUBE_SIZE, CUBE_SIZE),
+          new THREE.MeshStandardMaterial({ color: COLORS[i], roughness: 0.5 })
+        );
+        cube.position.set(x, CUBE_SIZE / 2, TRAY_Z);
+        cube.castShadow = true;
+        cube.receiveShadow = true;
+        scene.add(cube);
+        return cube;
+      });
+
+      // ---- animation state machine ----
+      function buildSequence(forward) {
+        var xsFrom = forward ? PICK_XS : PLACE_XS;
+        var xsTo = forward ? PLACE_XS : PICK_XS;
+        var seq = [];
+        for (var i = 0; i < 3; i++) {
+          seq.push({ type: 'move', pose: poseAbove(xsFrom, i), dur: 700 });
+          seq.push({ type: 'move', pose: poseAt(xsFrom, i), dur: 420 });
+          seq.push({ type: 'grip', close: true, index: i, dur: 300 });
+          seq.push({ type: 'move', pose: poseAbove(xsFrom, i), dur: 420 });
+          seq.push({ type: 'move', pose: poseAbove(xsTo, i), dur: 700 });
+          seq.push({ type: 'move', pose: poseAt(xsTo, i), dur: 420 });
+          seq.push({ type: 'grip', close: false, index: i, dur: 300 });
+          seq.push({ type: 'move', pose: poseAbove(xsTo, i), dur: 420 });
+        }
+        seq.push({ type: 'pause', dur: 900 });
+        return seq;
       }
 
-      if (carriage.holdingIndex !== -1) {
-        var b = blocks[carriage.holdingIndex];
-        b.x = carriage.x;
-        b.y = carriage.rodY + gripAttachOffset;
-      }
+      var direction = true;
+      var sequence = buildSequence(direction);
+      var stepIndex = 0;
+      var stepStart = null;
+      var stepFrom = null;
+      var holdingIndex = -1;
 
-      if (t >= 1) {
-        if (step.type === 'grip' && !step.close) carriage.holdingIndex = -1;
-        stepIndex++;
-        stepStart = null;
-        if (stepIndex >= sequence.length) {
-          direction = !direction;
-          sequence = buildSequence(direction);
-          stepIndex = 0;
+      var initPose = poseAbove(PICK_XS, 0);
+      var state = { baseAngle: initPose.baseAngle, shoulderAngle: initPose.shoulderAngle, elbowAngle: initPose.elbowAngle, gripT: 1 };
+
+      function lerp(a, b, t) { return a + (b - a) * t; }
+      function easeInOut(t) { return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; }
+
+      function beginStep(step) {
+        stepFrom = { baseAngle: state.baseAngle, shoulderAngle: state.shoulderAngle, elbowAngle: state.elbowAngle };
+        if (step.type === 'grip' && step.close) {
+          holdingIndex = step.index;
+          gripperGroup.attach(cubes[holdingIndex]);
         }
       }
-    }
 
-    function roundRect(x, y, w, h, r) {
-      ctx.beginPath();
-      ctx.moveTo(x + r, y);
-      ctx.arcTo(x + w, y, x + w, y + h, r);
-      ctx.arcTo(x + w, y + h, x, y + h, r);
-      ctx.arcTo(x, y + h, x, y, r);
-      ctx.arcTo(x, y, x + w, y, r);
-      ctx.closePath();
-    }
+      function update(ts) {
+        var step = sequence[stepIndex];
+        if (stepStart === null) { stepStart = ts; beginStep(step); }
+        var t = Math.min(1, (ts - stepStart) / step.dur);
+        var et = easeInOut(t);
 
-    function draw() {
-      ctx.clearRect(0, 0, W, H);
+        if (step.type === 'move') {
+          state.baseAngle = lerp(stepFrom.baseAngle, step.pose.baseAngle, et);
+          state.shoulderAngle = lerp(stepFrom.shoulderAngle, step.pose.shoulderAngle, et);
+          state.elbowAngle = lerp(stepFrom.elbowAngle, step.pose.elbowAngle, et);
+        } else if (step.type === 'grip') {
+          state.gripT = step.close ? (1 - et) : et;
+        }
 
-      ctx.fillStyle = '#66686b';
-      ctx.font = '11px "Roboto Mono", monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText('PICK', (pickXs[0] + pickXs[2]) / 2, tableY + 34);
-      ctx.fillText('PLACE', (placeXs[0] + placeXs[2]) / 2, tableY + 34);
+        baseGroup.rotation.y = state.baseAngle;
+        shoulderPivot.rotation.x = state.shoulderAngle;
+        elbowPivot.rotation.x = state.elbowAngle;
+        wristPivot.rotation.x = -(state.shoulderAngle + state.elbowAngle);
+        var spread = 0.03 + state.gripT * 0.09;
+        fingerL.position.x = -spread;
+        fingerR.position.x = spread;
 
-      ctx.strokeStyle = '#ccc';
-      ctx.setLineDash([4, 4]);
-      [pickXs, placeXs].forEach(function (xs) {
-        xs.forEach(function (x) {
-          ctx.strokeRect(x - 15, tableY - 12, 30, 22);
-        });
-      });
-      ctx.setLineDash([]);
+        if (t >= 1) {
+          if (step.type === 'grip' && !step.close) {
+            scene.attach(cubes[holdingIndex]);
+            holdingIndex = -1;
+          }
+          stepIndex++;
+          stepStart = null;
+          if (stepIndex >= sequence.length) {
+            direction = !direction;
+            sequence = buildSequence(direction);
+            stepIndex = 0;
+          }
+        }
+      }
 
-      ctx.strokeStyle = '#999';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(20, tableY + 12);
-      ctx.lineTo(680, tableY + 12);
-      ctx.stroke();
+      // ---- resize ----
+      function resize() {
+        var w = wrap.clientWidth, h = wrap.clientHeight;
+        if (w === 0 || h === 0) return;
+        renderer.setSize(w, h, false);
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+      }
+      resize();
+      window.addEventListener('resize', resize);
+      if (window.ResizeObserver) new ResizeObserver(resize).observe(wrap);
 
-      ctx.fillStyle = '#333';
-      roundRect(railX0 - 10, railY - 8, (railX1 - railX0) + 20, 8, 3);
-      ctx.fill();
-
-      blocks.forEach(function (b) {
-        ctx.fillStyle = b.color;
-        roundRect(b.x - b.w / 2, b.y - b.h / 2, b.w, b.h, 3);
-        ctx.fill();
-      });
-
-      ctx.fillStyle = '#ff8c00';
-      roundRect(carriage.x - 18, railY - 4, 36, 22, 4);
-      ctx.fill();
-
-      ctx.strokeStyle = '#555';
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.moveTo(carriage.x, railY + 16);
-      ctx.lineTo(carriage.x, carriage.rodY);
-      ctx.stroke();
-
-      var spread = 5 + carriage.gripperOpen * 8;
-      ctx.strokeStyle = '#222';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(carriage.x - spread, carriage.rodY);
-      ctx.lineTo(carriage.x - 3, carriage.rodY + 10);
-      ctx.moveTo(carriage.x + spread, carriage.rodY);
-      ctx.lineTo(carriage.x + 3, carriage.rodY + 10);
-      ctx.stroke();
-    }
-
-    function frame(ts) {
-      update(ts);
-      draw();
+      // ---- loop ----
+      function frame(ts) {
+        update(ts);
+        controls.update();
+        renderer.render(scene, camera);
+        requestAnimationFrame(frame);
+      }
       requestAnimationFrame(frame);
+    } catch (err) {
+      if (fallback) fallback.textContent = 'This browser can\'t run the 3D demo (WebGL unavailable).';
+      console.error(err);
     }
-    requestAnimationFrame(frame);
   })();
 </script>
 </body>
