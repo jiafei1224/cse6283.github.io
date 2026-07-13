@@ -159,6 +159,16 @@
     margin: -8px 0 16px;
   }
 
+  .demo-canvas-wrap {
+    border: 1px solid #ddd;
+    background: #fafafa;
+  }
+  #pick-place-canvas {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
   @media screen and (max-width: 600px) {
     .nav-box { float: none; width: 100%; margin: 20px 0; }
     .tabs { gap: 2px 14px; }
@@ -209,6 +219,7 @@
     <button class="tab-btn" data-tab="commentaries" role="tab" aria-selected="false">Commentaries</button>
     <button class="tab-btn" data-tab="assignments" role="tab" aria-selected="false">Assignments</button>
     <button class="tab-btn" data-tab="grading" role="tab" aria-selected="false">Grading</button>
+    <button class="tab-btn" data-tab="demo" role="tab" aria-selected="false">Demo</button>
   </nav>
 
   <div class="tab-panel" id="tab-schedule" role="tabpanel">
@@ -284,6 +295,14 @@
     </table>
   </div>
 
+  <div class="tab-panel" id="tab-demo" hidden role="tabpanel">
+    <h2>Demo</h2>
+    <p class="tab-note">Live in-browser simulation of a Cartesian pick-and-place robot &mdash; no backend, just canvas and JS.</p>
+    <div class="demo-canvas-wrap">
+      <canvas id="pick-place-canvas" width="700" height="300" aria-label="Animated pick-and-place robot simulation"></canvas>
+    </div>
+  </div>
+
   <div class="footer">
     CSE 6283 &middot; Robot Learning in the Era of Foundation Models
   </div>
@@ -317,6 +336,174 @@
 
     var initial = window.location.hash.replace('#', '');
     if (initial) activate(initial);
+  })();
+</script>
+<script>
+  (function () {
+    var canvas = document.getElementById('pick-place-canvas');
+    if (!canvas || !canvas.getContext) return;
+    var ctx = canvas.getContext('2d');
+    var W = canvas.width, H = canvas.height;
+
+    var railY = 46;
+    var railX0 = 60, railX1 = 640;
+    var tableY = 228;
+    var retractedY = railY + 14;
+    var extendedY = tableY - 14;
+    var gripAttachOffset = (tableY - 10) - extendedY;
+
+    var pickXs = [140, 190, 240];
+    var placeXs = [420, 470, 520];
+    var colors = ['#ff8c00', '#4c86f4', '#2ecc71'];
+
+    var blocks = pickXs.map(function (x, i) {
+      return { x: x, y: tableY - 10, w: 26, h: 20, color: colors[i] };
+    });
+
+    var carriage = { x: pickXs[0], rodY: retractedY, gripperOpen: 1, holdingIndex: -1 };
+
+    function buildSequence(forward) {
+      var xsFrom = forward ? pickXs : placeXs;
+      var xsTo = forward ? placeXs : pickXs;
+      var seq = [];
+      for (var i = 0; i < 3; i++) {
+        seq.push({ type: 'move', x: xsFrom[i] });
+        seq.push({ type: 'lower' });
+        seq.push({ type: 'grip', close: true, index: i });
+        seq.push({ type: 'raise' });
+        seq.push({ type: 'move', x: xsTo[i] });
+        seq.push({ type: 'lower' });
+        seq.push({ type: 'grip', close: false, index: i });
+        seq.push({ type: 'raise' });
+      }
+      seq.push({ type: 'pause', duration: 800 });
+      return seq;
+    }
+
+    var direction = true;
+    var sequence = buildSequence(direction);
+    var stepIndex = 0;
+    var stepStart = null;
+    var stepFrom = null;
+    var durations = { move: 650, lower: 380, raise: 380, grip: 300, pause: 800 };
+
+    function easeInOut(t) { return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; }
+
+    function beginStep(ts, step) {
+      stepStart = ts;
+      if (step.type === 'move') stepFrom = { x: carriage.x };
+      else if (step.type === 'lower' || step.type === 'raise') stepFrom = { rodY: carriage.rodY };
+      if (step.type === 'grip' && step.close) carriage.holdingIndex = step.index;
+    }
+
+    function update(ts) {
+      var step = sequence[stepIndex];
+      if (stepStart === null) beginStep(ts, step);
+      var dur = step.duration || durations[step.type] || 400;
+      var t = Math.min(1, (ts - stepStart) / dur);
+      var et = easeInOut(t);
+
+      if (step.type === 'move') {
+        carriage.x = stepFrom.x + (step.x - stepFrom.x) * et;
+      } else if (step.type === 'lower') {
+        carriage.rodY = stepFrom.rodY + (extendedY - stepFrom.rodY) * et;
+      } else if (step.type === 'raise') {
+        carriage.rodY = stepFrom.rodY + (retractedY - stepFrom.rodY) * et;
+      } else if (step.type === 'grip') {
+        carriage.gripperOpen = step.close ? (1 - et) : et;
+      }
+
+      if (carriage.holdingIndex !== -1) {
+        var b = blocks[carriage.holdingIndex];
+        b.x = carriage.x;
+        b.y = carriage.rodY + gripAttachOffset;
+      }
+
+      if (t >= 1) {
+        if (step.type === 'grip' && !step.close) carriage.holdingIndex = -1;
+        stepIndex++;
+        stepStart = null;
+        if (stepIndex >= sequence.length) {
+          direction = !direction;
+          sequence = buildSequence(direction);
+          stepIndex = 0;
+        }
+      }
+    }
+
+    function roundRect(x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+
+      ctx.fillStyle = '#66686b';
+      ctx.font = '11px "Roboto Mono", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('PICK', (pickXs[0] + pickXs[2]) / 2, tableY + 34);
+      ctx.fillText('PLACE', (placeXs[0] + placeXs[2]) / 2, tableY + 34);
+
+      ctx.strokeStyle = '#ccc';
+      ctx.setLineDash([4, 4]);
+      [pickXs, placeXs].forEach(function (xs) {
+        xs.forEach(function (x) {
+          ctx.strokeRect(x - 15, tableY - 12, 30, 22);
+        });
+      });
+      ctx.setLineDash([]);
+
+      ctx.strokeStyle = '#999';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(20, tableY + 12);
+      ctx.lineTo(680, tableY + 12);
+      ctx.stroke();
+
+      ctx.fillStyle = '#333';
+      roundRect(railX0 - 10, railY - 8, (railX1 - railX0) + 20, 8, 3);
+      ctx.fill();
+
+      blocks.forEach(function (b) {
+        ctx.fillStyle = b.color;
+        roundRect(b.x - b.w / 2, b.y - b.h / 2, b.w, b.h, 3);
+        ctx.fill();
+      });
+
+      ctx.fillStyle = '#ff8c00';
+      roundRect(carriage.x - 18, railY - 4, 36, 22, 4);
+      ctx.fill();
+
+      ctx.strokeStyle = '#555';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(carriage.x, railY + 16);
+      ctx.lineTo(carriage.x, carriage.rodY);
+      ctx.stroke();
+
+      var spread = 5 + carriage.gripperOpen * 8;
+      ctx.strokeStyle = '#222';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(carriage.x - spread, carriage.rodY);
+      ctx.lineTo(carriage.x - 3, carriage.rodY + 10);
+      ctx.moveTo(carriage.x + spread, carriage.rodY);
+      ctx.lineTo(carriage.x + 3, carriage.rodY + 10);
+      ctx.stroke();
+    }
+
+    function frame(ts) {
+      update(ts);
+      draw();
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
   })();
 </script>
 </body>
