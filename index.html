@@ -4,198 +4,231 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CSE 6283: Robot Learning in the Era of Foundation Models</title>
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --text: #1a1a1a;
-    --muted: #555;
-    --rule: #ccc;
+    --text: #111;
+    --muted: #66686b;
+    --rule: #000;
+    --box-bg: #eee;
     --bg: #fff;
-    --link: #0645ad;
-    --accent: #b31b1b;
+    --link: #4c86f4;
+    --accent: #ff8c00;
   }
   * { box-sizing: border-box; }
   body {
     margin: 0;
-    padding: 0;
+    padding: 20px 0 0;
     background: var(--bg);
     color: var(--text);
-    font-family: Georgia, "Times New Roman", Times, serif;
-    line-height: 1.55;
-    font-size: 17px;
+    font: 400 16px/1.6 "Assistant", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
   }
-  .wrap {
-    max-width: 800px;
+  .container {
+    max-width: 960px;
     margin: 0 auto;
-    padding: 48px 24px 96px;
+    padding: 0 24px 80px;
+  }
+  a { color: var(--link); font-weight: 400; text-decoration: none; }
+  a:hover { color: var(--accent); text-decoration: none; }
+
+  h1, h2, h3 {
+    font-family: "Roboto Mono", monospace;
+    color: #000;
+    font-weight: 500;
+    margin: 0 0 15px;
   }
   h1 {
-    font-size: 28px;
-    font-weight: 700;
-    margin: 0 0 4px;
-    line-height: 1.3;
-  }
-  .subtitle {
-    font-size: 16px;
-    color: var(--muted);
-    margin: 0 0 20px;
-  }
-  hr {
-    border: none;
-    border-top: 1px solid var(--rule);
-    margin: 24px 0;
+    font-size: 26px;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--rule);
   }
   h2 {
     font-size: 19px;
-    font-weight: 700;
-    margin: 36px 0 10px;
-    color: var(--accent);
+    margin-top: 0;
   }
-  p { margin: 0 0 14px; }
-  ul, ol { margin: 0 0 14px; padding-left: 24px; }
+  p { margin: 0 0 15px; }
+  ul, ol { margin: 0 0 15px 24px; padding: 0; }
   li { margin-bottom: 6px; }
-  a { color: var(--link); }
-  a:hover { text-decoration: none; }
-  .logistics {
-    font-size: 15.5px;
+
+  .nav-box {
+    background-color: var(--box-bg);
+    float: right;
+    width: 17em;
+    max-width: 100%;
+    padding: 18px 20px;
+    margin: 0 0 20px 24px;
+    font-size: 14.5px;
   }
-  .logistics table {
-    border-collapse: collapse;
-    margin: 6px 0 0;
+  .nav-box .label {
+    font-weight: 700;
   }
-  .logistics td {
-    padding: 2px 10px 2px 0;
-    vertical-align: top;
-  }
-  .logistics td.label {
+  .nav-box div { margin-bottom: 6px; }
+  .nav-box div:last-child { margin-bottom: 0; }
+
+  .subtitle {
     color: var(--muted);
-    white-space: nowrap;
+    font-size: 16px;
+    margin: 18px 0 4px;
   }
+
+  .section {
+    border-top: 1px solid var(--rule);
+    padding-top: 2.5em;
+    padding-bottom: 0.5em;
+    clear: both;
+  }
+  .section:first-of-type {
+    clear: none;
+  }
+
   table.workload, table.grading {
     border-collapse: collapse;
     width: 100%;
     margin: 8px 0 16px;
-    font-size: 16px;
+    font-size: 15.5px;
   }
   table.workload th, table.workload td,
   table.grading th, table.grading td {
     text-align: left;
-    padding: 6px 12px;
-    border-bottom: 1px solid var(--rule);
+    padding: 7px 12px;
+    border-bottom: 1px solid #ddd;
   }
   table.workload th, table.grading th {
     color: var(--muted);
     font-weight: 700;
-    font-size: 14px;
+    font-size: 13px;
     text-transform: uppercase;
     letter-spacing: 0.03em;
+    font-family: "Roboto Mono", monospace;
   }
   table.workload tr.total td, table.grading tr.total td {
     font-weight: 700;
-    border-top: 2px solid var(--text);
+    border-top: 2px solid #000;
     border-bottom: none;
   }
+
   .footer {
-    margin-top: 48px;
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid var(--rule);
     color: var(--muted);
-    font-size: 14px;
+    font-size: 13px;
+    font-family: "Roboto Mono", monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+
+  @media screen and (max-width: 600px) {
+    .nav-box { float: none; width: 100%; margin: 20px 0; }
   }
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="container">
 
   <h1>CSE 6283: Robot Learning in the Era of Foundation Models</h1>
   <p class="subtitle">Advanced topics in robot learning, imitation learning, reinforcement learning, and Vision-Language-Action models</p>
 
-  <div class="logistics">
-    <table>
-      <tr><td class="label">Instructor</td><td>Jiafei Duan &mdash; <a href="mailto:jefferyjiafei@gmail.com">jefferyjiafei@gmail.com</a></td></tr>
-      <tr><td class="label">Course code</td><td>CSE 6283</td></tr>
-      <tr><td class="label">Meeting time</td><td>TBD</td></tr>
-      <tr><td class="label">Location</td><td>TBD</td></tr>
+  <div class="nav-box">
+    <div><span class="label">Instructor</span>: <a href="mailto:jefferyjiafei@gmail.com">Jiafei Duan</a></div>
+    <div><span class="label">Email</span>: jefferyjiafei@gmail.com</div>
+    <div><span class="label">Course code</span>: CSE 6283</div>
+    <div><span class="label">Meeting time</span>: TBD</div>
+    <div><span class="label">Location</span>: TBD</div>
+  </div>
+
+  <div class="section" style="border-top: none; padding-top: 0;">
+    <h2>Course Description</h2>
+    <p>
+      This advanced course explores modern machine-learning algorithms for autonomous robots as embodied
+      intelligent agents, examining how embodied AI differs from internet AI in perceiving raw sensory data,
+      making decisions, and adapting to the physical world. It bridges classical techniques with recent advances
+      in large-scale models, starting from the fundamentals of robotic manipulation, imitation learning,
+      reinforcement learning, and policy optimization, and progressing to Vision-Language-Action (VLA) models
+      and foundation models for robotics. Through debating cutting-edge papers and completing a hands-on project,
+      students will learn to formulate problems, design algorithms, validate ideas experimentally, and engage
+      with the research process.
+    </p>
+  </div>
+
+  <div class="section">
+    <h2>Learning Outcomes</h2>
+    <ul>
+      <li>Develop a foundational understanding of robotic manipulation and the core principles of robot learning, including imitation learning and reinforcement learning.</li>
+      <li>Analyze and leverage foundation models for robotic manipulation tasks.</li>
+      <li>Apply and deploy core robot learning algorithms to tackle open-world manipulation problems.</li>
+      <li>Conduct independent research in robot learning and embodied AI.</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>Workload</h2>
+    <table class="workload">
+      <tr><th>Component</th><th>Hours / week</th></tr>
+      <tr><td>Lecture</td><td>3</td></tr>
+      <tr><td>Tutorial</td><td>0</td></tr>
+      <tr><td>Laboratory</td><td>0</td></tr>
+      <tr><td>Project / Assignments</td><td>3</td></tr>
+      <tr><td>Workshop</td><td>0</td></tr>
+      <tr><td>Others &amp; Preparatory work</td><td>4</td></tr>
+      <tr class="total"><td>Total</td><td>10</td></tr>
     </table>
   </div>
 
-  <hr>
+  <div class="section">
+    <h2>Syllabus</h2>
+    <p>
+      This course offers a comprehensive journey through modern robot learning, beginning with the fundamentals
+      of robotic manipulation grounded in Kevin Lynch and Frank Park's <em>Modern Robotics</em> and Russ Tedrake's
+      <em>Robotic Manipulation</em>, covering rigid-body kinematics, contact mechanics, grasping, and motion
+      planning. From this classical foundation, the course transitions into imitation learning, introducing
+      behavior cloning, DAgger, and modern approaches such as Action Chunking Transformers (ACT) and Diffusion
+      Policy. Students will then study reinforcement learning fundamentals, including Markov Decision Processes,
+      value-based and policy-gradient methods, and policy optimization algorithms such as PPO and SAC, alongside
+      practical considerations like offline RL and sim-to-real transfer. Building on these core robot learning
+      algorithms, the course advances into the modern era of Vision-Language-Action (VLA) models, examining
+      landmark works including RT-1, RT-2, OpenVLA, MolmoAct, and &pi;-0.5, with discussion of cross-embodiment
+      learning, language-conditioned manipulation, and long-horizon reasoning frameworks such as SayCan,
+      Manipulate-Anything, and Code-as-Policies. The final segment explores foundation models for robotics more
+      broadly, drawing on recent publications in world models, generative simulators, and large-scale robot data
+      efforts, preparing students to critically engage with the research frontier through paper discussions and
+      a hands-on capstone project.
+    </p>
+  </div>
 
-  <h2>Course Description</h2>
-  <p>
-    This advanced course explores modern machine-learning algorithms for autonomous robots as embodied
-    intelligent agents, examining how embodied AI differs from internet AI in perceiving raw sensory data,
-    making decisions, and adapting to the physical world. It bridges classical techniques with recent advances
-    in large-scale models, starting from the fundamentals of robotic manipulation, imitation learning,
-    reinforcement learning, and policy optimization, and progressing to Vision-Language-Action (VLA) models
-    and foundation models for robotics. Through debating cutting-edge papers and completing a hands-on project,
-    students will learn to formulate problems, design algorithms, validate ideas experimentally, and engage
-    with the research process.
-  </p>
+  <div class="section">
+    <h2>Assignments &amp; Grading</h2>
+    <table class="grading">
+      <tr><th>Component</th><th>Weight</th></tr>
+      <tr><td>Class Participation</td><td>30%</td></tr>
+      <tr><td>Project / Group Project</td><td>60%</td></tr>
+      <tr><td>Coding Assignment</td><td>10%</td></tr>
+    </table>
+  </div>
 
-  <h2>Learning Outcomes</h2>
-  <ul>
-    <li>Develop a foundational understanding of robotic manipulation and the core principles of robot learning, including imitation learning and reinforcement learning.</li>
-    <li>Analyze and leverage foundation models for robotic manipulation tasks.</li>
-    <li>Apply and deploy core robot learning algorithms to tackle open-world manipulation problems.</li>
-    <li>Conduct independent research in robot learning and embodied AI.</li>
-  </ul>
-
-  <h2>Workload</h2>
-  <table class="workload">
-    <tr><th>Component</th><th>Hours / week</th></tr>
-    <tr><td>Lecture</td><td>3</td></tr>
-    <tr><td>Tutorial</td><td>0</td></tr>
-    <tr><td>Laboratory</td><td>0</td></tr>
-    <tr><td>Project / Assignments</td><td>3</td></tr>
-    <tr><td>Workshop</td><td>0</td></tr>
-    <tr><td>Others &amp; Preparatory work</td><td>4</td></tr>
-    <tr class="total"><td>Total</td><td>10</td></tr>
-  </table>
-
-  <h2>Syllabus</h2>
-  <p>
-    This course offers a comprehensive journey through modern robot learning, beginning with the fundamentals
-    of robotic manipulation grounded in Kevin Lynch and Frank Park's <em>Modern Robotics</em> and Russ Tedrake's
-    <em>Robotic Manipulation</em>, covering rigid-body kinematics, contact mechanics, grasping, and motion
-    planning. From this classical foundation, the course transitions into imitation learning, introducing
-    behavior cloning, DAgger, and modern approaches such as Action Chunking Transformers (ACT) and Diffusion
-    Policy. Students will then study reinforcement learning fundamentals, including Markov Decision Processes,
-    value-based and policy-gradient methods, and policy optimization algorithms such as PPO and SAC, alongside
-    practical considerations like offline RL and sim-to-real transfer. Building on these core robot learning
-    algorithms, the course advances into the modern era of Vision-Language-Action (VLA) models, examining
-    landmark works including RT-1, RT-2, OpenVLA, MolmoAct, and &pi;-0.5, with discussion of cross-embodiment
-    learning, language-conditioned manipulation, and long-horizon reasoning frameworks such as SayCan,
-    Manipulate-Anything, and Code-as-Policies. The final segment explores foundation models for robotics more
-    broadly, drawing on recent publications in world models, generative simulators, and large-scale robot data
-    efforts, preparing students to critically engage with the research frontier through paper discussions and
-    a hands-on capstone project.
-  </p>
-
-  <h2>Assignments &amp; Grading</h2>
-  <table class="grading">
-    <tr><th>Component</th><th>Weight</th></tr>
-    <tr><td>Class Participation</td><td>30%</td></tr>
-    <tr><td>Project / Group Project</td><td>60%</td></tr>
-    <tr><td>Coding Assignment</td><td>10%</td></tr>
-  </table>
-
-  <h2>Ethical &amp; Societal Implications</h2>
-  <p>
-    Throughout the course, we will integrate discussions of the ethical and societal implications of deploying
-    learning-based robots in the physical world. As embodied AI systems move from controlled laboratory
-    settings into homes, workplaces, and public spaces, they raise pressing concerns around safety,
-    accountability, privacy, bias in training data, labor displacement, and the responsible collection and use
-    of large-scale robot datasets. Topics such as imitation learning from human demonstrations, foundation
-    models trained on web-scale data, and autonomous decision-making in open-world environments will be
-    examined not only for their technical merits but also for the social risks they introduce, including
-    failure modes in safety-critical settings, fairness across diverse users and environments, and the broader
-    question of how much autonomy should be delegated to physical agents. Students will be encouraged to
-    reflect on these dimensions in their paper discussions, capstone projects, and research framing, fostering
-    a habit of considering ethical impact as an integral part of the engineering process rather than an
-    afterthought.
-  </p>
+  <div class="section">
+    <h2>Ethical &amp; Societal Implications</h2>
+    <p>
+      Throughout the course, we will integrate discussions of the ethical and societal implications of deploying
+      learning-based robots in the physical world. As embodied AI systems move from controlled laboratory
+      settings into homes, workplaces, and public spaces, they raise pressing concerns around safety,
+      accountability, privacy, bias in training data, labor displacement, and the responsible collection and use
+      of large-scale robot datasets. Topics such as imitation learning from human demonstrations, foundation
+      models trained on web-scale data, and autonomous decision-making in open-world environments will be
+      examined not only for their technical merits but also for the social risks they introduce, including
+      failure modes in safety-critical settings, fairness across diverse users and environments, and the broader
+      question of how much autonomy should be delegated to physical agents. Students will be encouraged to
+      reflect on these dimensions in their paper discussions, capstone projects, and research framing, fostering
+      a habit of considering ethical impact as an integral part of the engineering process rather than an
+      afterthought.
+    </p>
+  </div>
 
   <div class="footer">
-    <hr>
-    <p>CSE 6283 &middot; Robot Learning in the Era of Foundation Models</p>
+    CSE 6283 &middot; Robot Learning in the Era of Foundation Models
   </div>
 
 </div>
