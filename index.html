@@ -240,6 +240,7 @@
     <button class="tab-btn" data-tab="assignments" role="tab" aria-selected="false">Assignments</button>
     <button class="tab-btn" data-tab="grading" role="tab" aria-selected="false">Grading</button>
     <button class="tab-btn" data-tab="demo" role="tab" aria-selected="false">Demo</button>
+    <button class="tab-btn" data-tab="reading" role="tab" aria-selected="false">Robot Learning Reading List</button>
   </nav>
 
   <div class="tab-panel" id="tab-schedule" role="tabpanel">
@@ -324,6 +325,48 @@
       <div class="demo-fallback" id="arm3d-fallback">Loading 3D demo&hellip;</div>
     </div>
     <p class="demo-caption">Blue-tinted zone: pick tray &middot; orange-tinted zone: place tray. The arm solves inverse kinematics live for every move.</p>
+  </div>
+
+  <div class="tab-panel" id="tab-reading" hidden role="tabpanel">
+    <h2>Robot Learning Reading List</h2>
+    <p class="tab-note">Core papers and texts for each unit. Updated as the syllabus firms up.</p>
+
+    <h3>Robotic manipulation foundations</h3>
+    <ul>
+      <li>Lynch &amp; Park &mdash; <em>Modern Robotics: Mechanics, Planning, and Control</em> (selected chapters on kinematics &amp; dynamics)</li>
+      <li>Tedrake &amp; MIT 6.4210 &mdash; <em>Robotic Manipulation</em> (course notes, grasping &amp; motion planning)</li>
+    </ul>
+
+    <h3>Imitation learning</h3>
+    <ul>
+      <li>Ross, Gordon &amp; Bagnell &mdash; <em>A Reduction of Imitation Learning and Structured Prediction to No-Regret Online Learning</em> (DAgger)</li>
+      <li>Zhao et al. &mdash; <em>Learning Fine-Grained Bimanual Manipulation with Low-Cost Hardware</em> (ACT)</li>
+      <li>Chi et al. &mdash; <em>Diffusion Policy: Visuomotor Policy Learning via Action Diffusion</em></li>
+    </ul>
+
+    <h3>Reinforcement learning</h3>
+    <ul>
+      <li>Schulman et al. &mdash; <em>Proximal Policy Optimization Algorithms</em> (PPO)</li>
+      <li>Haarnoja et al. &mdash; <em>Soft Actor-Critic: Off-Policy Maximum Entropy Deep RL</em> (SAC)</li>
+      <li>Levine et al. &mdash; <em>Offline Reinforcement Learning: Tutorial, Review, and Perspectives on Open Problems</em></li>
+    </ul>
+
+    <h3>Vision-Language-Action models</h3>
+    <ul>
+      <li>Brohan et al. &mdash; <em>RT-1: Robotics Transformer for Real-World Control at Scale</em></li>
+      <li>Brohan et al. &mdash; <em>RT-2: Vision-Language-Action Models Transfer Web Knowledge to Robotic Control</em></li>
+      <li>Kim et al. &mdash; <em>OpenVLA: An Open-Source Vision-Language-Action Model</em></li>
+      <li>Lee et al. &mdash; <em>MolmoAct: Action Reasoning Models for Open-World Embodiment</em></li>
+      <li>Physical Intelligence &mdash; <em>&pi;-0.5: A VLA with Open-World Generalization</em></li>
+    </ul>
+
+    <h3>Long-horizon reasoning &amp; foundation models for robotics</h3>
+    <ul>
+      <li>Ahn et al. &mdash; <em>Do As I Can, Not As I Say: Grounding Language in Robotic Affordances</em> (SayCan)</li>
+      <li>Huang et al. &mdash; <em>Manipulate-Anything: Automating Real-World Robots using Vision-Language Models</em></li>
+      <li>Liang et al. &mdash; <em>Code as Policies: Language Model Programs for Embodied Control</em></li>
+      <li>Ha, Schmidhuber &mdash; <em>World Models</em>, plus recent generative-simulator &amp; large-scale robot-data papers (assigned as they're finalized)</li>
+    </ul>
   </div>
 
   <div class="footer">
